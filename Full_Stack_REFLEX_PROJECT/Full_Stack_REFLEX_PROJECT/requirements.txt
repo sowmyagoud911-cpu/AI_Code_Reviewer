@@ -1,0 +1,7 @@
+langchain
+langchain-core
+langchain-community
+langchain-groq
+python-dotenv
+reflex
+reflex==0.8.28

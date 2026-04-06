@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+groq
+python-dotenv
+pymongo
+reportlab
+reflex==0.8.28.post1

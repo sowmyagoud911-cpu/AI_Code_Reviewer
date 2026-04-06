@@ -1,36 +1,36 @@
-"""Welcome to Reflex! This file outlines the steps to create a basic app."""
+import ast
 
-import reflex as rx
+class CodeParser:
+    def __init__(self, code: str):
+        self.code = code
+        self.tree = None
 
-from rxconfig import config
+    def parse(self):
+        try:
+            self.tree = ast.parse(self.code)
+            return True, None
+        except SyntaxError as e:
+            return False, str(e)
 
+    def get_functions(self):
+        functions = []
+        if not self.tree:
+            return functions
 
-class State(rx.State):
-    """The app state."""
+        for node in ast.walk(self.tree):
+            if isinstance(node, ast.FunctionDef):
+                functions.append(node.name)
 
+        return functions
 
-def index() -> rx.Component:
-    # Welcome Page (Index)
-    return rx.container(
-        rx.color_mode.button(position="top-right"),
-        rx.vstack(
-            rx.heading("Welcome to Reflex!", size="9"),
-            rx.text(
-                "Get started by editing ",
-                rx.code(f"{config.app_name}/{config.app_name}.py"),
-                size="5",
-            ),
-            rx.link(
-                rx.button("Check out our docs!"),
-                href="https://reflex.dev/docs/getting-started/introduction/",
-                is_external=True,
-            ),
-            spacing="5",
-            justify="center",
-            min_height="85vh",
-        ),
-    )
+    def get_imports(self):
+        imports = []
+        if not self.tree:
+            return imports
 
+        for node in ast.walk(self.tree):
+            if isinstance(node, ast.Import):
+                for n in node.names:
+                    imports.append(n.name)
 
-app = rx.App()
-app.add_page(index)
+        return imports
