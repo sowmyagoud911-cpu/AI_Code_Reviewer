@@ -1,4 +1,5 @@
 import ast
+from Ai_Code_Reviewer.ai_engine import generate_ai_review
 
 # ---------------- LANGUAGE DETECTION ----------------
 def detect_language(code: str):
@@ -167,19 +168,23 @@ def analyze_js(code: str):
 
 
 # ---------------- MAIN FUNCTION ----------------
-def analyze_code(code: str):
-    language = detect_language(code)
+def analyze_code(code: str, language: str = None):
+    if language:
+        language = language.strip()
+    else:
+        language = detect_language(code)
 
-    print("🌐 Detected Language:", language)
+    print("Detected Language:", language)
 
+    # Run existing static analysis first.
     if language == "Python":
-        return analyze_python(code)
+        static_result = analyze_python(code)
     elif language == "C++":
-        return analyze_cpp(code)
+        static_result = analyze_cpp(code)
     elif language == "Java":
-        return analyze_java(code)
+        static_result = analyze_java(code)
     elif language == "JavaScript":
-        return analyze_js(code)
+        static_result = analyze_js(code)
     else:
         return {
             "grade": "Error",
@@ -187,3 +192,40 @@ def analyze_code(code: str):
             "suggestions": [],
             "improved_code": code
         }
+
+    # Do not ask AI to review code that failed Python parsing.
+    if static_result["grade"] == "Error":
+        return static_result
+
+    # Ask Groq for a deeper review.
+    ai_result = generate_ai_review(
+        code=code,
+        language=language,
+        static_result=static_result
+    )
+
+    # Fall back to static analysis if Groq is unavailable.
+    if ai_result is None:
+        return static_result
+
+    # Preserve useful findings from both reviewers.
+    combined_issues = list(dict.fromkeys(
+        static_result["issues"] + ai_result["issues"]
+    ))
+
+    combined_suggestions = list(dict.fromkeys(
+        static_result["suggestions"] + ai_result["suggestions"]
+    ))
+
+    grade = ai_result["grade"]
+
+    # Do not give Grade A if static analysis found issues.
+    if static_result["issues"] and grade == "A":
+        grade = "B"
+
+    return {
+        "grade": grade,
+        "issues": combined_issues,
+        "suggestions": combined_suggestions,
+        "improved_code": ai_result["improved_code"]
+    }

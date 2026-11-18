@@ -1,0 +1,22 @@
+*.db
+__pycache__/
+*.py[cod]
+.states
+assets/external/
+.web
+
+# Environment files and virtual environments
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Generated Reflex files
+.web/
+.states/
+reflex.lock/
+
+# Python cache
+__pycache__/
+*.py[cod]

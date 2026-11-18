@@ -1,3 +1,4 @@
+
 import reflex as rx
 import requests
 import json
@@ -19,37 +20,39 @@ class State(rx.State):
     result: AnalysisResult = AnalysisResult()
     history: list[AnalysisResult] = []
 
-    # ✅ DARK MODE
     dark_mode: bool = False
 
     def toggle_theme(self):
         self.dark_mode = not self.dark_mode
 
-    # ✅ SETTERS
     def set_code(self, value: str):
         self.code = value
 
     def set_language(self, value: str):
         self.language = value
 
-    # ✅ ANALYZE
-    def analyze_code(self):
+
+    async def analyze_code(self):
         try:
-            res = requests.post(
-                "http://127.0.0.1:8001/analyze",
-                json={
-                    "code": self.code,
-                    "language": self.language
-                }
+            response = await rx.run_in_thread(
+                lambda: requests.post(
+                    "http://127.0.0.1:8001/analyze",
+                    json={
+                        "code": self.code,
+                        "language": self.language
+                    },
+                    timeout=30
+                )
             )
 
-            data = res.json()
+            response.raise_for_status()
+            response_data = response.json()
 
             self.result = AnalysisResult(
-                grade=data.get("grade", ""),
-                issues=data.get("issues", []),
-                suggestions=data.get("suggestions", []),
-                improved_code=data.get("improved_code", "")
+                grade=response_data.get("grade", ""),
+                issues=response_data.get("issues", []),
+                suggestions=response_data.get("suggestions", []),
+                improved_code=response_data.get("improved_code", "")
             )
 
             self.history.append(self.result.copy())
@@ -62,7 +65,6 @@ class State(rx.State):
                 improved_code=""
             )
 
-    # ✅ DOWNLOAD FIX
     def download_report(self):
         return rx.download(
             data=json.dumps(self.result.dict(), indent=2),
